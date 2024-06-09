@@ -69,21 +69,6 @@ struct ContentView: View {
         }
     }
     
-    var detailViewBackgroundOpacity: Double {
-        if imagesManager.fullscreenPresentingImage == nil {
-            return 0
-        }
-        let offsetAbsoluteDistance = offset.width * offset.width + offset.height * offset.height
-        let maximumExpectedDistance = 5000.0
-        let opacity = max(maximumExpectedDistance - offsetAbsoluteDistance, 50) / maximumExpectedDistance
-        if opacity <= 0.8 {
-            DispatchQueue.main.async {
-                shouldRelease = true
-            }
-        }
-        return opacity
-    }
-    
     @State private var shouldRelease = false
     
     func backgroundOpacityFor(url: URL) -> Double {
