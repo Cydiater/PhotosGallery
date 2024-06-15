@@ -24,53 +24,82 @@ let urls : [URL] = {
 
 struct ContentView: View {
     @Namespace private var namespace
-                
+    
     let animation = Animation.easeInOut(duration: 0.2)
     
-    @State private var showingImage: Image? = nil
+    @State private var imageSelected: Image? = nil
+    @State private var imageUrlSelected: URL? = nil
+    @State private var presentingImage = false
     
     var gridView: some View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())] ){
             ForEach(urls, id: \.self) { url in
                 Color.clear
                     .aspectRatio(contentMode: .fit)
+                    .matchedGeometryEffect(id: imageUrlSelected == url ? "base" : url.absoluteString, in: namespace, isSource: true)
                     .overlay {
                         AsyncImage(url: url, content: { image in
                             image
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)
-                                .onTapGesture {
-                                    if showingImage == nil {
-                                        showingImage = image
+                                .onChange(of: imageUrlSelected) {
+                                    if imageUrlSelected == url {
+                                        imageSelected = image
+                                        withAnimation(animation) {
+                                            presentingImage = true
+                                        }
                                     }
                                 }
-                        }, placeholder: {  ProgressView() })
+                        }) {
+                            ProgressView()
+                        }
                     }
                     .clipped()
+                    .opacity(imageUrlSelected == url ? 0 : 1)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        if imageUrlSelected == nil {
+                            imageUrlSelected = url
+                        }
+                    }
             }
         }
     }
-
+    
     var body: some View {
         ScrollView {
             gridView
                 .padding()
         }
         .overlay {
-            if let image = showingImage {
-                ZStack {
+            ZStack {
+                Color.clear
+                    .matchedGeometryEffect(id: "enlarged", in: namespace, isSource: true)
+                
+                if let image = imageSelected {
                     Color.black
                         .ignoresSafeArea()
+                        .opacity(presentingImage ? 1 : 0)
                     
                     Color.clear
                         .overlay {
                             image
                                 .resizable()
-                                .aspectRatio(contentMode: .fit)
+                                .aspectRatio(contentMode: presentingImage ? .fit : .fill)
                         }
-                }
-                .onTapGesture {
-                    showingImage = nil
+                        .clipped()
+                        .matchedGeometryEffect(id: presentingImage ? "enlarged" : "base", in: namespace, isSource: false)
+                        .allowsHitTesting(presentingImage)
+                        .onTapGesture {
+                            if presentingImage {
+                                withAnimation(animation) {
+                                    presentingImage = false
+                                } completion: {
+                                    imageSelected = nil
+                                    imageUrlSelected = nil
+                                }
+                            }
+                        }
                 }
             }
         }
