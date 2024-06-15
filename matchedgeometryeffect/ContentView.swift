@@ -9,102 +9,95 @@ import SwiftUI
 
 let numImages = 128
 
-class ImagesPresentationManager: ObservableObject {
-    let urls : [URL] = {
-        let dims = [200, 300, 400, 500, 600, 700]
-        var urls: [URL] = []
-        for idx in 0..<numImages {
-            let width = dims.randomElement()!
-            let height = dims.randomElement()!
-            let urlString = "https://picsum.photos/id/\(idx)/\(width)/\(height)"
-            let url = URL(string: urlString)!
-            urls.append(url)
-        }
-        return urls
-    }()
-    
-    @Published var lastPresentingImage: URL? = nil
-    @Published var fullscreenPresentingImage: URL? = nil
-    @Published var appearingImages: Set<URL> = []
-    
-    func imageAppeared(url: URL) {
-        appearingImages.insert(url)
+let urls : [URL] = {
+    let dims = [200, 300, 400, 500, 600, 700]
+    var urls: [URL] = []
+    for idx in 0..<numImages {
+        let width = dims.randomElement()!
+        let height = dims.randomElement()!
+        let urlString = "https://picsum.photos/id/\(idx)/\(width)/\(height)"
+        let url = URL(string: urlString)!
+        urls.append(url)
     }
-    
-    func imageDisappeared(url: URL) {
-        appearingImages.remove(url)
-    }
-    
-    func present(url: URL?) {
-        lastPresentingImage = fullscreenPresentingImage
-        fullscreenPresentingImage = url
-    }
-    
-    func isCurrentPresentingImageOrLastPresentingImage(url: URL) -> Bool {
-        fullscreenPresentingImage == url || lastPresentingImage == url
-    }
-}
+    return urls
+}()
 
 struct ContentView: View {
     @Namespace private var namespace
     
-    @ObservedObject private var imagesManager = ImagesPresentationManager()
-            
     let animation = Animation.easeInOut(duration: 0.2)
+    
+    @State private var imageSelected: Image? = nil
+    @State private var imageUrlSelected: URL? = nil
+    @State private var presentingImage = false
+    
+    @State private var offset = CGSize.zero
     
     var gridView: some View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())] ){
-            ForEach(0..<numImages, id: \.self) { idx in
-                let url = imagesManager.urls[idx]
+            ForEach(urls, id: \.self) { url in
                 Color.clear
                     .aspectRatio(contentMode: .fit)
-                    .matchedGeometryEffect(id: url.absoluteString, in: namespace, isSource: true)
-                    .onAppear { imagesManager.imageAppeared(url: url) }
-                    .onDisappear { imagesManager.imageDisappeared(url: url) }
+                    .matchedGeometryEffect(id: imageUrlSelected == url ? "base" : url.absoluteString, in: namespace, isSource: true)
+                    .overlay {
+                        AsyncImage(url: url, content: { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .onChange(of: imageUrlSelected) {
+                                    if imageUrlSelected == url {
+                                        imageSelected = image
+                                        withAnimation(animation) {
+                                            presentingImage = true
+                                        }
+                                    }
+                                }
+                        }) {
+                            ProgressView()
+                        }
+                    }
+                    .clipped()
+                    .opacity(imageUrlSelected == url ? 0 : 1)
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        withAnimation(animation) {
-                            imagesManager.present(url: url)
+                        if imageUrlSelected == nil {
+                            imageUrlSelected = url
                         }
                     }
             }
         }
     }
-        
-    func backgroundOpacityFor(url: URL) -> Double {
-        if imagesManager.fullscreenPresentingImage == url {
-            return 1.0
+    
+    var distance: Double { sqrt(offset.width * offset.width + offset.height * offset.height) }
+
+    var detailViewBackgroundOpacity: Double {
+        if presentingImage {
+            let maximumDistance: Double = 200
+            return max(0, maximumDistance - distance) / maximumDistance
         } else {
-            return 0.0
+            return 0
         }
     }
     
-    @ViewBuilder
-    func detailView(url: URL) -> some View {
-        Color.black
-            .ignoresSafeArea()
-            .zIndex(imagesManager.isCurrentPresentingImageOrLastPresentingImage(url: url) ? 1 : 0)
-            .opacity(backgroundOpacityFor(url: url))
-        
-        Color.clear
-            .overlay {
-                AsyncImage(url: url, content: { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: (imagesManager.fullscreenPresentingImage == url) ? .fit : .fill)
-                }, placeholder: {
-                    ProgressView()
-                })
+    var detailViewScaleEffect: Double {
+        if presentingImage {
+            let maximumDistance: Double = 1000
+            return max(max(0, maximumDistance - distance) / maximumDistance, 0.8)
+        } else {
+            return 1
+        }
+    }
+    
+    func dismissDetailView() {
+        if presentingImage {
+            withAnimation(animation) {
+                presentingImage = false
+                offset = CGSize.zero
+            } completion: {
+                imageSelected = nil
+                imageUrlSelected = nil
             }
-            .clipped()
-            .zIndex(imagesManager.isCurrentPresentingImageOrLastPresentingImage(url: url) ? 1 : 0)
-            .matchedGeometryEffect(id: (imagesManager.fullscreenPresentingImage == url) ? "enlarged" : url.absoluteString, in: namespace, isSource: false)
-            .allowsHitTesting(imagesManager.fullscreenPresentingImage == url ? true : false)
-            .onTapGesture {
-                withAnimation(animation) {
-                    imagesManager.present(url: nil)
-                }
-            }
+        }
     }
     
     var body: some View {
@@ -115,12 +108,51 @@ struct ContentView: View {
         .overlay {
             ZStack {
                 Color.clear
-                    .matchedGeometryEffect(id: "enlagred", in: namespace, isSource: true)
+                    .matchedGeometryEffect(id: "enlarged", in: namespace, isSource: true)
                 
-                ForEach(Array(imagesManager.appearingImages), id: \.absoluteString) { url in
-                    detailView(url: url)
+                if let image = imageSelected {
+                    ZStack {
+                        Color.black
+                            .ignoresSafeArea()
+                            .opacity(detailViewBackgroundOpacity)
+                        
+                        Color.clear
+                            .overlay {
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: presentingImage ? .fit : .fill)
+                            }
+                            .offset(offset)
+                            .scaleEffect(detailViewScaleEffect)
+                            .clipped()
+                            .matchedGeometryEffect(id: presentingImage ? "enlarged" : "base", in: namespace, isSource: false)
+                            .allowsHitTesting(presentingImage)
+                    }
+                    .gesture(
+                        DragGesture()
+                            .onChanged { value in
+                                if presentingImage {
+                                    offset = value.translation
+                                }
+                            }
+                            .onEnded { _ in
+                                if presentingImage {
+                                    if detailViewBackgroundOpacity < 0.8 {
+                                        dismissDetailView()
+                                    } else {
+                                        withAnimation {
+                                            offset = CGSize.zero
+                                        }
+                                    }
+                                }
+                            }
+                    )
+                    .onTapGesture {
+                        dismissDetailView()
+                    }
                 }
             }
+            .ignoresSafeArea()
         }
     }
 }
