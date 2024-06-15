@@ -1,6 +1,5 @@
 
-
-https://github.com/Cydiater/PhotosGallery/assets/16633622/1967a985-077c-472f-a4ef-886428c16ff5
+https://github.com/Cydiater/PhotosGallery/assets/16633622/22758dbb-c394-41f6-8935-d064460e0540
 
 ### Credit
 
