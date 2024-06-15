@@ -11,6 +11,7 @@
 		A6021B302C121430002CDFD0 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6021B2F2C121430002CDFD0 /* ContentView.swift */; };
 		A6021B322C121431002CDFD0 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A6021B312C121431002CDFD0 /* Assets.xcassets */; };
 		A6021B352C121431002CDFD0 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A6021B342C121431002CDFD0 /* Preview Assets.xcassets */; };
+		A6021B3C2C1DB681002CDFD0 /* WithZoomableDetailViewOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6021B3B2C1DB681002CDFD0 /* WithZoomableDetailViewOverlay.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -19,6 +20,7 @@
 		A6021B2F2C121430002CDFD0 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A6021B312C121431002CDFD0 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A6021B342C121431002CDFD0 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		A6021B3B2C1DB681002CDFD0 /* WithZoomableDetailViewOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WithZoomableDetailViewOverlay.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -53,6 +55,7 @@
 			children = (
 				A6021B2D2C121430002CDFD0 /* matchedgeometryeffectApp.swift */,
 				A6021B2F2C121430002CDFD0 /* ContentView.swift */,
+				A6021B3B2C1DB681002CDFD0 /* WithZoomableDetailViewOverlay.swift */,
 				A6021B312C121431002CDFD0 /* Assets.xcassets */,
 				A6021B332C121431002CDFD0 /* Preview Content */,
 			);
@@ -138,6 +141,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A6021B302C121430002CDFD0 /* ContentView.swift in Sources */,
+				A6021B3C2C1DB681002CDFD0 /* WithZoomableDetailViewOverlay.swift in Sources */,
 				A6021B2E2C121430002CDFD0 /* matchedgeometryeffectApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
