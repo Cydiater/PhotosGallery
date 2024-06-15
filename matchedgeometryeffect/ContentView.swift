@@ -31,6 +31,8 @@ struct ContentView: View {
     @State private var imageUrlSelected: URL? = nil
     @State private var presentingImage = false
     
+    @State private var offset = CGSize.zero
+    
     var gridView: some View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())] ){
             ForEach(urls, id: \.self) { url in
@@ -66,6 +68,38 @@ struct ContentView: View {
         }
     }
     
+    var distance: Double { sqrt(offset.width * offset.width + offset.height * offset.height) }
+
+    var detailViewBackgroundOpacity: Double {
+        if presentingImage {
+            let maximumDistance: Double = 200
+            return max(0, maximumDistance - distance) / maximumDistance
+        } else {
+            return 0
+        }
+    }
+    
+    var detailViewScaleEffect: Double {
+        if presentingImage {
+            let maximumDistance: Double = 1000
+            return max(max(0, maximumDistance - distance) / maximumDistance, 0.8)
+        } else {
+            return 1
+        }
+    }
+    
+    func dismissDetailView() {
+        if presentingImage {
+            withAnimation(animation) {
+                presentingImage = false
+                offset = CGSize.zero
+            } completion: {
+                imageSelected = nil
+                imageUrlSelected = nil
+            }
+        }
+    }
+    
     var body: some View {
         ScrollView {
             gridView
@@ -77,31 +111,48 @@ struct ContentView: View {
                     .matchedGeometryEffect(id: "enlarged", in: namespace, isSource: true)
                 
                 if let image = imageSelected {
-                    Color.black
-                        .ignoresSafeArea()
-                        .opacity(presentingImage ? 1 : 0)
-                    
-                    Color.clear
-                        .overlay {
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: presentingImage ? .fit : .fill)
-                        }
-                        .clipped()
-                        .matchedGeometryEffect(id: presentingImage ? "enlarged" : "base", in: namespace, isSource: false)
-                        .allowsHitTesting(presentingImage)
-                        .onTapGesture {
-                            if presentingImage {
-                                withAnimation(animation) {
-                                    presentingImage = false
-                                } completion: {
-                                    imageSelected = nil
-                                    imageUrlSelected = nil
+                    ZStack {
+                        Color.black
+                            .ignoresSafeArea()
+                            .opacity(detailViewBackgroundOpacity)
+                        
+                        Color.clear
+                            .overlay {
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: presentingImage ? .fit : .fill)
+                            }
+                            .offset(offset)
+                            .scaleEffect(detailViewScaleEffect)
+                            .clipped()
+                            .matchedGeometryEffect(id: presentingImage ? "enlarged" : "base", in: namespace, isSource: false)
+                            .allowsHitTesting(presentingImage)
+                    }
+                    .gesture(
+                        DragGesture()
+                            .onChanged { value in
+                                if presentingImage {
+                                    offset = value.translation
                                 }
                             }
-                        }
+                            .onEnded { _ in
+                                if presentingImage {
+                                    if detailViewBackgroundOpacity < 0.8 {
+                                        dismissDetailView()
+                                    } else {
+                                        withAnimation {
+                                            offset = CGSize.zero
+                                        }
+                                    }
+                                }
+                            }
+                    )
+                    .onTapGesture {
+                        dismissDetailView()
+                    }
                 }
             }
+            .ignoresSafeArea()
         }
     }
 }
