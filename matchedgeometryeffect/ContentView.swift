@@ -39,11 +39,13 @@ class ImagesPresentationManager: ObservableObject {
         lastPresentingImage = fullscreenPresentingImage
         fullscreenPresentingImage = url
     }
+    
+    func isCurrentPresentingImageOrLastPresentingImage(url: URL) -> Bool {
+        fullscreenPresentingImage == url || lastPresentingImage == url
+    }
 }
 
 struct ContentView: View {
-    @State private var offset = CGSize.zero
-    
     @Namespace private var namespace
     
     @ObservedObject private var imagesManager = ImagesPresentationManager()
@@ -68,9 +70,7 @@ struct ContentView: View {
             }
         }
     }
-    
-    @State private var shouldRelease = false
-    
+        
     func backgroundOpacityFor(url: URL) -> Double {
         if imagesManager.fullscreenPresentingImage == url {
             return 1.0
@@ -83,7 +83,7 @@ struct ContentView: View {
     func detailView(url: URL) -> some View {
         Color.black
             .ignoresSafeArea()
-            .zIndex(imagesManager.fullscreenPresentingImage == url || imagesManager.lastPresentingImage == url ? 1 : 0)
+            .zIndex(imagesManager.isCurrentPresentingImageOrLastPresentingImage(url: url) ? 1 : 0)
             .opacity(backgroundOpacityFor(url: url))
         
         Color.clear
@@ -97,8 +97,7 @@ struct ContentView: View {
                 })
             }
             .clipped()
-            .offset(offset)
-            .zIndex(imagesManager.fullscreenPresentingImage == url || imagesManager.lastPresentingImage == url ? 1 : 0)
+            .zIndex(imagesManager.isCurrentPresentingImageOrLastPresentingImage(url: url) ? 1 : 0)
             .matchedGeometryEffect(id: (imagesManager.fullscreenPresentingImage == url) ? "enlarged" : url.absoluteString, in: namespace, isSource: false)
             .allowsHitTesting(imagesManager.fullscreenPresentingImage == url ? true : false)
             .onTapGesture {
