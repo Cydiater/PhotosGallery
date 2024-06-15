@@ -22,7 +22,7 @@ let urls : [URL] = {
     return urls
 }()
 
-struct ContentView: View {
+struct ImagesGridView: View {
     @Namespace private var namespace
     
     let animation = Animation.easeInOut(duration: 0.2)
@@ -153,6 +153,18 @@ struct ContentView: View {
                 }
             }
             .ignoresSafeArea()
+        }
+    }
+}
+
+struct ContentView: View {
+    var body: some View {
+        NavigationStack {
+            List {
+                NavigationLink("Images Grid View", destination: ImagesGridView())
+                NavigationLink("Using `WithZoomableDetailViewOverlay`", destination: UsingWithZoomableDetailViewOverlay())
+            }
+            .font(.callout)
         }
     }
 }
