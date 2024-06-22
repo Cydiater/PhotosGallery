@@ -9,13 +9,61 @@ import SwiftUI
 
 class ZoomableImageViewModel: ObservableObject {
     @Published var imageSelected: Image? = nil
-    @Published var imageUrlSelected: URL? = nil
+    @Published var imageIdSelected: String? = nil
     @Published var presentingImage = false
     
     let namespace: Namespace.ID
     
     init(namespace: Namespace.ID) {
         self.namespace = namespace
+    }
+}
+
+struct ZoomableSquareImageViaAsyncFn: View {
+    @ObservedObject var vm: ZoomableImageViewModel
+    
+    @State private var loadedImage: Image?
+    
+    let async_fn: () async -> Image
+    let id: String
+    
+    let animation = Animation.easeInOut(duration: 0.2)
+    
+    var body: some View {
+        if let image = loadedImage {
+            Color.clear
+                .aspectRatio(contentMode: .fit)
+                .matchedGeometryEffect(id: vm.imageIdSelected == id ? "base" : id, in: vm.namespace, isSource: true)
+                .overlay {
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .onChange(of: vm.imageIdSelected) {
+                            if vm.imageIdSelected == id {
+                                vm.imageSelected = image
+                                withAnimation(animation) {
+                                    vm.presentingImage = true
+                                }
+                            }
+                        }
+                }
+                .clipped()
+                .opacity(vm.imageIdSelected == id ? 0 : 1)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    if vm.imageIdSelected == nil {
+                        vm.imageIdSelected = id
+                    }
+                }
+        } else {
+            ProgressView()
+                .onAppear {
+                    Task {
+                        let image = await async_fn()
+                        self.loadedImage = image
+                    }
+                }
+        }
     }
 }
 
@@ -29,14 +77,14 @@ struct ZoomableSquareAsyncImage: View {
     var body: some View {
         Color.clear
             .aspectRatio(contentMode: .fit)
-            .matchedGeometryEffect(id: vm.imageUrlSelected == url ? "base" : url.absoluteString, in: vm.namespace, isSource: true)
+            .matchedGeometryEffect(id: vm.imageIdSelected == url.absoluteString ? "base" : url.absoluteString, in: vm.namespace, isSource: true)
             .overlay {
                 AsyncImage(url: url, content: { image in
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                        .onChange(of: vm.imageUrlSelected) {
-                            if vm.imageUrlSelected == url {
+                        .onChange(of: vm.imageIdSelected) {
+                            if vm.imageIdSelected == url.absoluteString {
                                 vm.imageSelected = image
                                 withAnimation(animation) {
                                     vm.presentingImage = true
@@ -48,11 +96,11 @@ struct ZoomableSquareAsyncImage: View {
                 }
             }
             .clipped()
-            .opacity(vm.imageUrlSelected == url ? 0 : 1)
+            .opacity(vm.imageIdSelected == url.absoluteString ? 0 : 1)
             .contentShape(Rectangle())
             .onTapGesture {
-                if vm.imageUrlSelected == nil {
-                    vm.imageUrlSelected = url
+                if vm.imageIdSelected == nil {
+                    vm.imageIdSelected = url.absoluteString
                 }
             }
     }
@@ -92,7 +140,7 @@ struct WithZoomableDetailViewOverlay<Content: View>: View {
                 offset = CGSize.zero
             } completion: {
                 vm.imageSelected = nil
-                vm.imageUrlSelected = nil
+                vm.imageIdSelected = nil
             }
         }
     }
@@ -169,7 +217,13 @@ struct UsingWithZoomableDetailViewOverlay: View {
                     ZoomableSquareAsyncImage(url: urls[2], vm: vm)
                 }
                 .padding()
-                Text("This is a long text...")
+                ZoomableSquareImageViaAsyncFn(vm: vm, async_fn: { async
+                    let url = urls[3]
+                    let (imageData, resp) = try! await URLSession.shared.data(from: url)
+                    let uiImage = UIImage(data: imageData)!
+                    return Image(uiImage: uiImage)
+                }, id: "async_image")
+                .padding(100)
             }
         }
     }
