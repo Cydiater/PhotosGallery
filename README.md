@@ -1,4 +1,4 @@
-This repo was only to share the exploration. I also made a proper swift package ![here](https://github.com/Cydiater/ZoomableDetailView) if you want to have this.
+This repo was only to share the exploration. I also made a proper swift package [here](https://github.com/Cydiater/ZoomableDetailView) if you want to have this.
 
 https://github.com/Cydiater/PhotosGallery/assets/16633622/22758dbb-c394-41f6-8935-d064460e0540
 
